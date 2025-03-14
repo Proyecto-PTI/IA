@@ -1,0 +1,55 @@
+from deepface import DeepFace
+from flask import Flask
+import requests
+import os
+import numpy
+
+app = Flask(__name__)
+
+BACKEND_URL = "http://127.0.0.1:8000/save_vector"  #esto de ha de adaptar a lo que tengamos !!!!!!!!!!
+
+@app.post("/process")
+def process_images():
+    data = request.json
+    user = data["user"]
+
+    path_folder = os.path.join("../data", user)
+
+    if not os.path.exists(path_folder):
+        return jsonify({"error": "Carpeta del usuario no encontrada"}), 400
+
+    result = []
+
+    for image in os.listdir(user):
+        path_image = os.path.join(path_folder, image)
+
+        try:
+            vector = DeepFace.represent(path_image, model_name ="Facenet", enforce_detection=True) #Si una cara no esta clara, no deveulve ningun vector (True)
+
+            if isinstance(vector, list) and len(vector) > 0:
+                result = vector[0]["embedding"]
+                result.append(result)
+
+        except ValueError as e:
+            # Si no se detecta una cara
+            print(f"Error con {image}: No se detectó cara - {str(e)}")
+            continue
+        except Exception as e:
+            # En caso de cualquier otro error
+            print(f"Error procesando {image}: {str(e)}")
+            continue
+
+    if not result:
+        return jsonify({"error": "No se encontraron vectores"}), 400
+
+    #Convertir la lista de vectores a una matriz para luego hacer el promedio en cada dimension del vector
+
+    result_array = numpy.array(result)
+    result_avg = numpy.mean(result_array, axis = 0) #aplicamos la media en las filas axis = 0
+
+    response = requests.post(BACKEND_URL, json={"user": user, "vector": result_avg.tolist()})
+
+    if response.status_code == 200:
+        return jsonify({"message": f"Vector promedio calculado para {user}"})
+    else:
+        return jsonify({"error": "Error al enviar el vector promedio al backend"}), 500
