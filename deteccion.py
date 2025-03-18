@@ -1,10 +1,14 @@
 from deepface import DeepFace
 import os
-import numpy
+import numpy as np
 import requests
 import cv2
 
 BACKEND_URL = "http://localhost:5000/receive_vector" #Canviar!!!!!!!!!!!!!!!!!!!
+BACKEND2_URL = "http://localhost:5000/adjusted_vector"
+
+THRESHOLD = XXX #SE HA DE PROVAR CUANTO
+LEARNING = 0.05 #SE HA DE PROVAR CUANTO pero ha de ser poquito
 
 
 def detect_face():
@@ -27,20 +31,50 @@ def detect_face():
 
             if not result
                 print("No se ha detectado correctamente la imagen")
-                break
+                continue
 
-            vector = numpy.array(result[0]["emedding"])
+            vector = np.array(result[0]["emedding"])
 
             data = {
                 "vector": vector.tolist()
             }
 
-            response = request.post(BACKEND_URL, json=data)
+            response = requests.post(BACKEND_URL, json=data)
+
+            #Respuesta del backend con un vector de la BD  si todo ha ido bien
+            if response.status_code == 200:
+                data = response.json()
+
+                vectorBD = np.array(data["vectorBD"])   #PONERSE DE ACUERDO CON LOS NOMBRES..........
+
+                #Distancia euclediana entre los dos vectores (siempre sera positivo porque eleva al cuadrado las diferencias)
+                dist = np.linalg.norm(vector - vectorBD)
+
+                if (dist < THERESHOLD):
+                    print("Usuario autorizado a entrar")
+                    vectorAdjusted = (1 - LEARNING)*vectorBD + LEARNING*vector
+
+                    data = {
+                        "vectorAdjusted": vectorAdjusted.tolist()
+                    }
+
+                    data = requests.post(BACKEND_URL2, json=data)
+
+
+                else:
+                    print("Usuario no autorizado a entrar")
+
+                    #FALTA DEFINIR QUE QUIERES QUE TE ENVIE CUANDO NO ESTA AUTORIZADO
+
+            else:
+                print("Error en la respuesta del backend")
+
 
         except Exception as e:
             print "Error al procesar la imagen: {str(e)}"
 
     capture.release()
+
 
 if __name__ == "__main__":
     detect_face()

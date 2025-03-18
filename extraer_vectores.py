@@ -1,8 +1,8 @@
 from deepface import DeepFace
-from flask import Flask
+from flask import Flask, request, jsonify
+import numpy as np
+from PIL import Image
 import requests
-import os
-import numpy
 
 app = Flask(__name__)
 
@@ -10,25 +10,22 @@ BACKEND_URL = "http://127.0.0.1:8000/save_vector"  #esto de ha de adaptar a lo q
 
 @app.post("/process")
 def process_images():
-    data = request.json
-    user = data["user"]
 
-    path_folder = os.path.join("../data", user)
-
-    if not os.path.exists(path_folder):
-        return jsonify({"error": "Carpeta del usuario no encontrada"}), 400
+    data = request.files.getlist("images")
 
     result = []
 
-    for image in os.listdir(user):
-        path_image = os.path.join(path_folder, image)
+    for image in data:
+        img = Image.open(image)
+
+        img_array = np.array(img)
 
         try:
-            vector = DeepFace.represent(path_image, model_name ="Facenet", enforce_detection=True) #Si una cara no esta clara, no deveulve ningun vector (True)
+            vector = DeepFace.represent(img_array, model_name ="Facenet", enforce_detection=True) #Si una cara no esta clara (True), deveuelve una lista vacia
 
-            if isinstance(vector, list) and len(vector) > 0:
-                result = vector[0]["embedding"]
-                result.append(result)
+            #Si vector no esta vacio (ha podido estraer bien una cara)
+            if len(vector) > 0:
+                result.append(vector[0]["embedding"])
 
         except ValueError as e:
             # Si no se detecta una cara
@@ -44,8 +41,8 @@ def process_images():
 
     #Convertir la lista de vectores a una matriz para luego hacer el promedio en cada dimension del vector
 
-    result_array = numpy.array(result)
-    result_avg = numpy.mean(result_array, axis = 0) #aplicamos la media en las filas axis = 0
+    result_array = np.array(result)
+    result_avg = np.mean(result_array, axis = 0) #aplicamos la media en las filas axis = 0
 
     response = requests.post(BACKEND_URL, json={"user": user, "vector": result_avg.tolist()})
 
@@ -53,3 +50,8 @@ def process_images():
         return jsonify({"message": f"Vector promedio calculado para {user}"})
     else:
         return jsonify({"error": "Error al enviar el vector promedio al backend"}), 500
+
+
+# Ejecutamos el servidor Flask
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
