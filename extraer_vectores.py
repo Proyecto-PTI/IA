@@ -44,10 +44,10 @@ def process_images():
     result_array = np.array(result)
     result_avg = np.mean(result_array, axis = 0) #aplicamos la media en las filas axis = 0
 
-    response = requests.post(BACKEND_URL, json={"user": user, "vector": result_avg.tolist()})
+    response = requests.post(BACKEND_URL, json={"vector": result_avg.tolist()})
 
     if response.status_code == 200:
-        return jsonify({"message": f"Vector promedio calculado para {user}"})
+        return jsonify({"message": f"Vector promedio calculado"})
     else:
         return jsonify({"error": "Error al enviar el vector promedio al backend"}), 500
 
@@ -55,3 +55,7 @@ def process_images():
 # Ejecutamos el servidor Flask
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
+    #curl -X POST http://127.0.0.1:5000/process   -F "images=@../../MESSI.jpg"
+    #python provarDetection.py /path/MESSI2.jpg
+

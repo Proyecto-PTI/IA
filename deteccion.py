@@ -1,11 +1,10 @@
 from deepface import DeepFace
-import os
 import numpy as np
 import requests
 import cv2
 
-BACKEND_URL = "http://localhost:5000/receive_vector" #Canviar!!!!!!!!!!!!!!!!!!!
-BACKEND2_URL = "http://localhost:5000/adjusted_vector"
+BACKEND_URL = "http://localhost:8000/receive_vector" #Canviar!!!!!!!!!!!!!!!!!!!
+BACKEND2_URL = "http://localhost:8000/adjusted_vector"
 
 THRESHOLD = XXX #SE HA DE PROVAR CUANTO
 LEARNING = 0.05 #SE HA DE PROVAR CUANTO pero ha de ser poquito
@@ -29,11 +28,11 @@ def detect_face():
         try:
             result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=True)
 
-            if not result
+            if not result:
                 print("No se ha detectado correctamente la imagen")
                 continue
 
-            vector = np.array(result[0]["emedding"])
+            vector = np.array(result[0]["embedding"])
 
             data = {
                 "vector": vector.tolist()
@@ -50,15 +49,20 @@ def detect_face():
                 #Distancia euclediana entre los dos vectores (siempre sera positivo porque eleva al cuadrado las diferencias)
                 dist = np.linalg.norm(vector - vectorBD)
 
-                if (dist < THERESHOLD):
+                if dist < THERESHOLD:
                     print("Usuario autorizado a entrar")
                     vectorAdjusted = (1 - LEARNING)*vectorBD + LEARNING*vector
 
-                    data = {
+                    adj_data = {
                         "vectorAdjusted": vectorAdjusted.tolist()
                     }
 
-                    data = requests.post(BACKEND_URL2, json=data)
+                    adj_resp = requests.post(BACKEND_URL2, json=adj_data)
+
+                    if adj_resp.status_code == 200:
+                        print("Vector actualizado enviado correctamente")
+                    else:
+                        print("Error al actualizar el vector")
 
 
                 else:
@@ -71,7 +75,7 @@ def detect_face():
 
 
         except Exception as e:
-            print "Error al procesar la imagen: {str(e)}"
+            print ("Error al procesar la imagen")
 
     capture.release()
 
