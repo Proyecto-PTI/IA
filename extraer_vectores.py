@@ -15,21 +15,27 @@ def process_images():
 
     result = []
 
+    i = 0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     for image in data:
         img = Image.open(image)
 
         img_array = np.array(img)
 
         try:
+
+            i += 1
             vector = DeepFace.represent(img_array, model_name ="Facenet", enforce_detection=True) #Si una cara no esta clara (True), deveuelve una lista vacia
 
-            #Si vector no esta vacio (ha podido estraer bien una cara)
+
+
+            #Si ha podido extraer bien una cara
             if len(vector) > 0:
                 result.append(vector[0]["embedding"])
+                print(f"Vector foto {i}: {vector}", end="\n\n") #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         except ValueError as e:
             # Si no se detecta una cara
-            print(f"Error con {image}: No se detectó cara - {str(e)}")
+            print(f"Error con {image}: No se detectó cara - {str(e)}", end="\n\n")
             continue
         except Exception as e:
             # En caso de cualquier otro error

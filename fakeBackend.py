@@ -41,7 +41,7 @@ def receive_vector():
 
 
     # Retornamos el vector almacenado para compararlo con el recibido
-    return jsonify({"vectorBD": vector}), 200
+    return jsonify({"vectorBD": user_vectors["user_1"]}), 200
 
 
 @app.post("/adjusted_vector")

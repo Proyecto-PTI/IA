@@ -7,11 +7,12 @@ import sys
 # Asegúrate de que TensorFlow no intente usar la GPU
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiar según corresponda
 BACKEND2_URL = "http://localhost:8000/adjusted_vector"
 
-THRESHOLD = 0.6  # Puedes ajustar este valor
+THRESHOLD = 10  # Puedes ajustar este valor
 LEARNING = 0.05  # Puedes ajustar este valor
 
 def detect_face(image_path):
@@ -31,7 +32,7 @@ def detect_face(image_path):
 
         if not result:
             print("No se ha detectado correctamente la imagen.")
-            return
+            return #Acabar de definir esto!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         # Obtenemos el vector de la cara
         vector = np.array(result[0]["embedding"])
