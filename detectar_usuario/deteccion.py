@@ -1,4 +1,5 @@
 from deepface import DeepFace
+from flask import Flask, request, jsonify
 import numpy as np
 import requests
 import cv2
@@ -9,41 +10,46 @@ import sys
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 #os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
+app = Flask(__name__)
+
 BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiarlo segun los servcios que vayamos a tener
 BACKEND2_URL = "http://localhost:8000/adjusted_vector"
 
 THRESHOLD = 10  # TENEMOS QUE HACER TESTEO DE ESTOS VALORES!!!!!!!!!!!!!!!!!!!!!
 LEARNING = 0.05
 
-def detect_face(image_path):
-    # Cargamos la imagen desde el path
-    frame = cv2.imread(image_path)
 
-    if frame is None:
-        print(f"Error: No se pudo cargar la imagen desde {image_path}.")
-        return
+@app.post("/detect")
+def detect_face():
 
-    # Redimensionamos la imagen para que sea más rápido el procesamiento
-    frame_resize = cv2.resize(frame, (640, 480))
+    if 'file' not in request.files:
+        return jsonify({"error": "No se encontró el campo file en la solicitud"}), 400
 
+    file = request.files['file']
     try:
+        rFile = file.read()
+        arr = np.frombuffer(rFile, np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+        if img is None:
+             return jsonify({"error": "Error al decodificar la imagen"}), 400
+
+
+        # Redimensionamos la imagen para que sea más rápido el procesamiento
+        frame_resize = cv2.resize(img, (640, 480))
+
+
         # Usamos DeepFace para obtener el vector de la cara y forzamos a que reconozca una cara
         result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=True)
 
         if not result:
-            print("No se ha detectado correctamente la imagen.")
-            return #Acabar de definir esto!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            return jsonify({"error": "No se ha detectado correctamente la cara"}), 400
 
         # Obtenemos el vector de la cara
         vector = np.array(result[0]["embedding"])
 
-        # Creamos el payload para enviar al backend
-        data = {
-            "vector": vector.tolist()
-        }
-
         # Enviamos el vector al backend
-        response = requests.post(BACKEND_URL, json=data)
+        response = requests.post(BACKEND_URL, json={"vector": vector.tolist()})
 
         # Si la respuesta es correcta, calculamos la distancia entre los vectores
         if response.status_code == 200:
@@ -55,34 +61,31 @@ def detect_face(image_path):
             # Calculamos la distancia euclidiana entre los dos vectores
             dist = np.linalg.norm(vector - vectorBD)
 
-            if dist < THRESHOLD:
+            if dist > THRESHOLD:
+                print("Usuario no autorizado a entrar.")
+                #Si no esta autorizado a entrar devuelvo un vector vacio
+                no_authorized_response = requests.post(BACKEND2_URL, json={"vectorAdjusted": []})
+            else:
                 print("Usuario autorizado a entrar.")
                 # Ajustamos el vector si la distancia es suficiente
                 vectorAdjusted = (1 - LEARNING) * vectorBD + LEARNING * vector
 
                 # Enviamos el vector ajustado al backend
-                adjusted_data = {
-                    "vectorAdjusted": vectorAdjusted.tolist()
-                }
-
-                adjusted_response = requests.post(BACKEND2_URL, json=adjusted_data)
+                adjusted_response = requests.post(BACKEND2_URL, json={"vectorAdjusted": vectorAdjusted.tolist()})
 
                 if adjusted_response.status_code == 200:
                     print("Vector ajustado guardado con éxito.")
                 else:
                     print("Error al guardar el vector ajustado.")
-            else:
-                print("Usuario no autorizado a entrar.")
         else:
-            print(f"Error en la respuesta del backend. Código de estado: {response.status_code}, Detalles: {response.text}.")
+            return jsonify({"error": "Error al comunicarse con el backend"}), 500
+
     except Exception as e:
-        print(f"Error al procesar la imagen: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"status": "Proceso completado correctamente"}), 200
+
 
 if __name__ == "__main__":
-    # Verificamos que se haya pasado el path de la imagen
-    if len(sys.argv) < 2:
-        print("Por favor, proporciona el path de la imagen.")
-        sys.exit(1)
+    app.run(debug=True, port=5002)
 
-    image_path = sys.argv[1]
-    detect_face(image_path)
