@@ -4,16 +4,16 @@ import requests
 import cv2
 import sys
 
-# Asegúrate de que TensorFlow no intente usar la GPU
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+# Para no usar la GPU porque da problemas
+#import os
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiar según corresponda
+BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiarlo segun los servcios que vayamos a tener
 BACKEND2_URL = "http://localhost:8000/adjusted_vector"
 
-THRESHOLD = 10  # Puedes ajustar este valor
-LEARNING = 0.05  # Puedes ajustar este valor
+THRESHOLD = 10  # TENEMOS QUE HACER TESTEO DE ESTOS VALORES!!!!!!!!!!!!!!!!!!!!!
+LEARNING = 0.05
 
 def detect_face(image_path):
     # Cargamos la imagen desde el path
@@ -27,7 +27,7 @@ def detect_face(image_path):
     frame_resize = cv2.resize(frame, (640, 480))
 
     try:
-        # Usamos DeepFace para obtener el vector de la cara
+        # Usamos DeepFace para obtener el vector de la cara y forzamos a que reconozca una cara
         result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=True)
 
         if not result:
