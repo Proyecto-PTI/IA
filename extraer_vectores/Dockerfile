@@ -17,6 +17,9 @@ RUN pip install  --no-cache-dir -r requirements.txt
 
 # Copiamos el en el directorio de trabajo los ficheros
 COPY extraer_vectores.py /usr/src/app
+COPY ./deepface_local /usr/src/app/deepface_local
+
+RUN pip install ./deepface_local
 
 # Exponemos el puerto 5001 para Flask
 EXPOSE 5001

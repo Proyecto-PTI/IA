@@ -1,0 +1,11 @@
+requests>=2.27.1
+numpy<2
+pandas>=0.23.4
+tqdm>=4.30.0
+Pillow>=5.2.0
+opencv-python>=4.5.5.64
+tensorflow==2.10.0
+keras>=2.10.0
+Flask>=1.1.2
+retina-face>=0.0.14
+
