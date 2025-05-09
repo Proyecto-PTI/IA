@@ -6,12 +6,10 @@ import requests
 
 app = Flask(__name__)
 
-BACKEND_URL = "http://127.0.0.1:8000/save_vector"  #esto de ha de adaptar a lo que tengamos !!!!!!!!!!
-
 @app.post("/process")
 def process_images():
 
-    data = request.files.getlist("files")
+    data = request.files.getlist("images")
 
     result = []
 
@@ -46,18 +44,14 @@ def process_images():
     result_array = np.array(result)
     result_avg = np.mean(result_array, axis = 0) #aplicamos la media en las filas axis = 0
 
-    response = requests.post(BACKEND_URL, json={"vector": result_avg.tolist()})
-
-    if response.status_code == 200:
-        return jsonify({"message": f"Vector promedio calculado"})
-    else:
-        return jsonify({"error": "Error al enviar el vector promedio al backend"}), 500
+    return jsonify({
+        "message": "Vector promedio calculado",
+        "vector": result_avg.tolist()
+        })
 
 
 # Ejecutamos el servidor Flask
 if __name__ == "__main__":
     app.run(debug=True, port=5001, host="0.0.0.0")
 
-    #curl -X POST http://127.0.0.1:5000/process   -F "images=@../../MESSI.jpg"
-    #python provarDetection.py /path/MESSI2.jpg
 
