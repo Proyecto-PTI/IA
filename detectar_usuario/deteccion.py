@@ -32,6 +32,7 @@ def detect_face():
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
         if img is None:
+             print("Decodificar")
              return jsonify({"error": "Error al decodificar la imagen"}), 400
 
 
@@ -40,9 +41,17 @@ def detect_face():
 
 
         # Usamos DeepFace para obtener el vector de la cara y forzamos a que reconozca una cara
-        result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=True)
+        result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=False)
+
+        face_confidence = result[0].get("face_confidence", 0)
+        print(f"Confianza de detección facial: {face_confidence:.3f}")
+
+        if (face_confidence < 0.85):
+            print("No face_confidence");
+            return jsonify({"error": "No se ha detectado correctamente la cara"}), 400
 
         if not result:
+            print("No result");
             return jsonify({"error": "No se ha detectado correctamente la cara"}), 400
 
         # Obtenemos el vector de la cara
@@ -73,10 +82,10 @@ def detect_face():
                 # Enviamos el vector ajustado al backend
                 adjusted_response = requests.post(BACKEND2_URL, json={"vectorAdjusted": vectorAdjusted.tolist()})
 
-                if adjusted_response.status_code == 200:
-                    print("Vector ajustado guardado con éxito.")
-                else:
-                    print("Error al guardar el vector ajustado.")
+               # if adjusted_response.status_code == 200:
+                #    print("Vector ajustado guardado con éxito.")
+               # else:
+                #    print("Error al guardar el vector ajustado.")
         else:
             return jsonify({"error": "Error al comunicarse con el backend"}), 500
 
