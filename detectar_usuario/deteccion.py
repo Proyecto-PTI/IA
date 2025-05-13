@@ -15,7 +15,7 @@ app = Flask(__name__)
 BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiarlo segun los servcios que vayamos a tener
 BACKEND2_URL = "http://localhost:8000/adjusted_vector"
 
-THRESHOLD = 10  # TENEMOS QUE HACER TESTEO DE ESTOS VALORES!!!!!!!!!!!!!!!!!!!!!
+THRESHOLD = 11  # TENEMOS QUE HACER TESTEO DE ESTOS VALORES!!!!!!!!!!!!!!!!!!!!!
 LEARNING = 0.05
 
 
@@ -69,6 +69,8 @@ def detect_face():
 
             # Calculamos la distancia euclidiana entre los dos vectores
             dist = np.linalg.norm(vector - vectorBD)
+
+            print(f"Distancia: {dist:.3f}")
 
             if dist > THRESHOLD:
                 print("Usuario no autorizado a entrar.")
