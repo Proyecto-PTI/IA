@@ -15,6 +15,7 @@ spec:
       containers:
         - name: flask-app-detectar
           image: andmas199/pti:flask-detectar
+          imagePullPolicy: Always
           ports:
             - containerPort: 5002
 ---

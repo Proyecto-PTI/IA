@@ -15,6 +15,7 @@ spec:
       containers:
         - name: flask-app-vectores
           image: andmas199/pti:flask-vectores  
+          imagePullPolicy: Always
           ports:
             - containerPort: 5001
 ---

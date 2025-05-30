@@ -17,9 +17,9 @@ RUN pip install  --no-cache-dir -r requirements.txt
 
 # Copiamos el en el directorio de trabajo los ficheros
 COPY deteccion.py /usr/src/app
-COPY ./deepface_local /usr/src/app/deepface_local
+COPY ./deepface /usr/src/app/deepface
 
-RUN pip install ./deepface_local
+RUN pip install ./deepface
 
 # Exponemos el puerto 5001 para Flask
 EXPOSE 5002

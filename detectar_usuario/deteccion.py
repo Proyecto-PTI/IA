@@ -5,17 +5,13 @@ import requests
 import cv2
 import sys
 
-# Para no usar la GPU porque da problemas
-#import os
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-#os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 app = Flask(__name__)
 
-BACKEND_URL = "http://localhost:8000/receive_vector"  # Cambiarlo segun los servcios que vayamos a tener
-BACKEND2_URL = "http://localhost:8000/adjusted_vector"
+BACKEND_URL = "http://backend-service:8000/receive_vector"  
+BACKEND2_URL = "http://backend-service:8000/adjusted_vector"
 
-THRESHOLD = 10  # TENEMOS QUE HACER TESTEO DE ESTOS VALORES!!!!!!!!!!!!!!!!!!!!!
+THRESHOLD = 11  
 LEARNING = 0.05
 
 
@@ -32,6 +28,7 @@ def detect_face():
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
         if img is None:
+             print("Decodificar")
              return jsonify({"error": "Error al decodificar la imagen"}), 400
 
 
@@ -40,9 +37,17 @@ def detect_face():
 
 
         # Usamos DeepFace para obtener el vector de la cara y forzamos a que reconozca una cara
-        result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=True)
+        result = DeepFace.represent(frame_resize, model_name="Facenet", enforce_detection=False)
+
+        face_confidence = result[0].get("face_confidence", 0)
+        print(f"Confianza de detección facial: {face_confidence:.3f}")
+
+        if (face_confidence < 0.85):
+            print("No face_confidence");
+            return jsonify({"error": "No se ha detectado correctamente la cara"}), 400
 
         if not result:
+            print("No result");
             return jsonify({"error": "No se ha detectado correctamente la cara"}), 400
 
         # Obtenemos el vector de la cara
@@ -61,6 +66,8 @@ def detect_face():
             # Calculamos la distancia euclidiana entre los dos vectores
             dist = np.linalg.norm(vector - vectorBD)
 
+            print(f"Distancia: {dist:.3f}")
+
             if dist > THRESHOLD:
                 print("Usuario no autorizado a entrar.")
                 #Si no esta autorizado a entrar devuelvo un vector vacio
@@ -73,10 +80,10 @@ def detect_face():
                 # Enviamos el vector ajustado al backend
                 adjusted_response = requests.post(BACKEND2_URL, json={"vectorAdjusted": vectorAdjusted.tolist()})
 
-                if adjusted_response.status_code == 200:
-                    print("Vector ajustado guardado con éxito.")
-                else:
-                    print("Error al guardar el vector ajustado.")
+               # if adjusted_response.status_code == 200:
+                #    print("Vector ajustado guardado con éxito.")
+               # else:
+                #    print("Error al guardar el vector ajustado.")
         else:
             return jsonify({"error": "Error al comunicarse con el backend"}), 500
 
@@ -88,4 +95,3 @@ def detect_face():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5002, host="0.0.0.0")
-
